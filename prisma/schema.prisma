@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  dreamXIUsername String        @unique
+  email         String         @unique
+  skillScore    Int            @default(0)
+  profilePicture String?        
+  password      String
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  participations Participation[]
+  sessions      Session[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Match {
+  id            String         @id @default(cuid())
+  matchNumber   Int
+  season        Int            @default(2025)
+  matchDate     DateTime
+  homeTeam      Team           @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeTeamId    String
+  awayTeam      Team           @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayTeamId    String
+  winningTeam   Team?          @relation("WinningTeam", fields: [winningTeamId], references: [id])
+  winningTeamId String?
+  winByRuns     Int?
+  winByWickets  Int?
+  isCompleted   Boolean        @default(false)
+  participations Participation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([matchNumber, season])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@index([winningTeamId])
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  shortName     String   @unique
+  logoUrl       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  homeMatches   Match[]  @relation("HomeTeam")
+  awayMatches   Match[]  @relation("AwayTeam")
+  matchesWon    Match[]  @relation("WinningTeam")
+}
+
+model Participation {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId       String
+  points        Int      @default(0)
+  rank          Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, matchId])
+  @@index([userId])
+  @@index([matchId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
