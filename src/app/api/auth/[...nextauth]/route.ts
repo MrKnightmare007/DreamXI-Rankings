@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import { compare } from 'bcrypt';
+import NextAuth from 'next-auth';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -74,5 +75,9 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET
 };
+
+// Export the NextAuth handler functions for the API route
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
 
 export const getAuthSession = () => getServerSession(authOptions);

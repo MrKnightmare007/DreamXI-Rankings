@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./providers";
+import Navigation from "./components/Navigation";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,15 +30,15 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-b from-blue-50 to-purple-50 dark:from-gray-900 dark:to-blue-950 min-h-screen`}
       >
-        <div className="container mx-auto px-4">
-          <header className="py-4">
-            <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">Dream11 Rankings</h1>
-          </header>
-          <main className="py-8">
-            {children}
-          </main>
-        </div>
-        <Toaster position="bottom-right" />
+        <AuthProvider>
+          <div className="container mx-auto px-4">
+            <Navigation />
+            <main className="py-4">
+              {children}
+            </main>
+          </div>
+          <Toaster position="bottom-right" />
+        </AuthProvider>
       </body>
     </html>
   );
