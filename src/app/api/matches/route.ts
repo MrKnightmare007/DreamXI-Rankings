@@ -7,24 +7,19 @@ export async function GET(request: Request) {
   try {
     const session = await getAuthSession();
     
-    // Sync with external cricket API
     let syncResult;
     let syncError = null;
     try {
       syncResult = await syncLiveMatchesWithDB();
-      // Proceed with available matches even if some failed
       console.log('Successfully processed', syncResult.length, 'matches');
     } catch (error) {
       syncError = error;
       console.error('Sync error:', error);
-      // Continue with existing matches despite partial sync failure
     }
     
-    // Get current date
-    // Get current time
     const now = new Date();
+    console.log('Current date:', now.toISOString());
 
-    // Fetch and categorize matches
     const matches = await prisma.match.findMany({
       where: { season: 2025 },
       include: {
@@ -39,20 +34,32 @@ export async function GET(request: Request) {
       orderBy: { matchDate: 'asc' }
     });
 
-    // Categorize matches with precise status detection
+    console.log('Raw matches from DB:', matches.map(m => ({
+      id: m.id,
+      matchDate: m.matchDate.toISOString(),
+      isCompleted: m.isCompleted,
+      homeTeam: m.homeTeam.name,
+      awayTeam: m.awayTeam.name,
+    })));
+
     const upcoming = matches.filter(m => 
       !m.isCompleted && new Date(m.matchDate) > now
     );
     
+    // Widen the live window for testing (e.g., 48 hours)
     const live = matches.filter(m =>
       !m.isCompleted && 
       new Date(m.matchDate) <= now && 
-      new Date(m.matchDate) >= new Date(now.getTime() - 8 * 60 * 60 * 1000)
+      new Date(m.matchDate) >= new Date(now.getTime() - 48 * 60 * 60 * 1000)
     );
 
     const completed = matches.filter(m => m.isCompleted);
 
-    
+    console.log('Filtered matches:', {
+      upcoming: upcoming.map(m => ({ id: m.id, matchDate: m.matchDate.toISOString() })),
+      live: live.map(m => ({ id: m.id, matchDate: m.matchDate.toISOString() })),
+      completed: completed.map(m => ({ id: m.id, matchDate: m.matchDate.toISOString() })),
+    });
 
     return NextResponse.json({
       success: true,

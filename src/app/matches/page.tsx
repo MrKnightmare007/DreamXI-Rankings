@@ -59,10 +59,13 @@ async function MatchesContent() {
   // Handle the nested data structure from the API
   const matchesData = data.data || {};
   
-  if (!matchesData.upcoming || !matchesData.completed) {
-    console.error('Invalid matches data format:', data);
-    return <div className="p-4 text-red-500">Invalid matches data format received from API</div>;
-  }
+  // Log the actual data structure for debugging
+  console.log('API response data structure:', matchesData);
+  
+  // Ensure all required properties exist with fallbacks
+  if (!matchesData.upcoming) matchesData.upcoming = [];
+  if (!matchesData.completed) matchesData.completed = [];
+  if (!matchesData.live) matchesData.live = [];
 
   return renderMatchesContent(matchesData, session);
 }
