@@ -75,9 +75,25 @@ export default async function MatchDetailPage({ params }: MatchPageProps) {
       
       {/* Match Header */}
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-          <p className="text-sm font-medium mb-2">{formattedDate} • {formattedTime}</p>
-          <div className="flex justify-between items-center">
+        <div className={`bg-gradient-to-r ${match.isCompleted ? 'from-green-600 to-emerald-600' : new Date() > matchDate ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-purple-600'} p-6 text-white relative overflow-hidden`}>
+        <div className="absolute top-2 right-2 flex items-center space-x-2">
+          {match.isCompleted ? (
+            <div className="bg-white/20 px-3 py-1 rounded-full flex items-center">
+              <span className="text-sm">Completed</span>
+            </div>
+          ) : new Date() > matchDate ? (
+            <div className="animate-pulse bg-white/20 px-3 py-1 rounded-full flex items-center">
+              <div className="h-2 w-2 bg-white rounded-full mr-2" />
+              <span className="text-sm">Live</span>
+            </div>
+          ) : (
+            <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
+              Upcoming
+            </div>
+          )}
+        </div>
+        <p className="text-sm font-medium mb-2">{formattedDate} • {formattedTime}</p>
+        <div className="flex justify-between items-center">
             <div className="flex flex-col items-center space-y-2">
               <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="w-20 h-20 object-contain" />
               <p className="text-xl font-bold">{match.homeTeam.name}</p>
@@ -104,9 +120,18 @@ export default async function MatchDetailPage({ params }: MatchPageProps) {
         {/* Match Status */}
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-lg font-medium">
-              {match.isCompleted ? 'Match Completed' : 'Match Upcoming'}
-            </p>
+            <div className="flex items-center space-x-3">
+              <p className="text-lg font-medium">
+                {match.isCompleted ? 'Match Completed' : new Date() > matchDate ? 'Match In Progress' : 'Match Upcoming'}
+              </p>
+              {!match.isCompleted && (
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {matchDate > new Date() ? 
+                    `Starts in ${Math.ceil((matchDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24))} days` : 
+                    'Live updates every 30 seconds'}
+                </span>
+              )}
+            </div>
             {!match.isCompleted && session && (
               <Link 
                 href={`/matches/${match.id}/participate`}

@@ -60,15 +60,16 @@ model Match {
 }
 
 model Team {
-  id            String   @id @default(cuid())
-  name          String   @unique
-  shortName     String   @unique
-  logoUrl       String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  homeMatches   Match[]  @relation("HomeTeam")
-  awayMatches   Match[]  @relation("AwayTeam")
-  matchesWon    Match[]  @relation("WinningTeam")
+  id            String    @id @default(cuid())
+  name          String    @unique
+  shortName     String
+  logoUrl       String?
+  establishedYear Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  homeMatches   Match[]   @relation("HomeTeam")
+  awayMatches   Match[]   @relation("AwayTeam")
+  winningMatches Match[]  @relation("WinningTeam")
 }
 
 model Participation {
