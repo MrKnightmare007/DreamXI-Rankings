@@ -31,23 +31,77 @@ export default async function DashboardPage() {
     }
   });
 
-  // Fetch upcoming matches
-  const upcomingMatches = await prisma.match.findMany({
-    where: {
-      matchDate: {
-        gte: new Date()
-      },
-      isCompleted: false
-    },
-    include: {
-      homeTeam: true,
-      awayTeam: true
-    },
-    orderBy: {
-      matchDate: 'asc'
-    },
-    take: 5
+  // Fetch matches from the API to ensure consistent filtering
+  const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/matches`, {
+    cache: 'no-store'
   });
+  
+  if (!response.ok) {
+    console.error('Failed to fetch matches for dashboard');
+  }
+  
+  const matchesData = await response.json();
+  const upcomingMatches = matchesData?.data?.upcoming?.slice(0, 5) || [];
+  
+  // Log for debugging
+  console.log('Dashboard upcoming matches:', upcomingMatches.length);
+
+  // Fetch cricket API data
+  let cricketData = null;
+  let filteredCricketData = null;
+  let liveMatches = [];
+  let completedMatches = [];
+  let upcomingCricketMatches = [];
+  let apiLimitMessage = null;
+  
+  try {
+    // Using cricket API with series_info endpoint to get all IPL matches
+    const cricketApiResponse = await fetch(`https://api.cricapi.com/v1/series_info?apikey=${process.env.CRICKET_API_KEY}&id=d5a498c8-7596-4b93-8ab0-e0efc3345312`, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
+    });
+    
+    if (cricketApiResponse.ok) {
+      cricketData = await cricketApiResponse.json();
+      console.log('Cricket API series data:', cricketData);
+      
+      // Process cricket data to categorize matches
+      if (cricketData && cricketData.data && cricketData.data.matchList) {
+        const allMatches = cricketData.data.matchList || [];
+        
+        // Create filtered cricket data for display
+        filteredCricketData = {
+          ...cricketData,
+          data: allMatches
+        };
+        
+        // Filter for live matches (matchStarted is true and matchEnded is false)
+        liveMatches = allMatches.filter(match => 
+          match.matchStarted === true && match.matchEnded === false
+        );
+        
+        // Filter for completed matches (matchEnded is true)
+        completedMatches = allMatches.filter(match => 
+          match.matchEnded === true
+        );
+        
+        // Filter for upcoming matches (matchStarted is false)
+        upcomingCricketMatches = allMatches.filter(match => 
+          match.matchStarted === false
+        );
+        
+        console.log('IPL Live matches:', liveMatches.length);
+        console.log('IPL Completed matches:', completedMatches.length);
+        console.log('IPL Upcoming matches:', upcomingCricketMatches.length);
+      }
+    } else {
+      console.error('Failed to fetch cricket data:', cricketApiResponse.statusText);
+    }
+  } catch (error) {
+    console.error('Error fetching cricket data:', error);
+  }
 
   // Calculate user stats
   const totalMatches = user?.participations.length || 0;
@@ -83,59 +137,116 @@ export default async function DashboardPage() {
         </div>
       </section>
       
-      {/* Upcoming Matches Section */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Upcoming Matches</h2>
-        
-        {upcomingMatches.length > 0 ? (
+      {/* Cricket API Data Section */}
+      {filteredCricketData && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">IPL Cricket API Data</h2>
+          
+          {apiLimitMessage && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md text-sm">
+              {apiLimitMessage}
+            </div>
+          )}
+          
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-96">
+            <pre className="text-xs">{JSON.stringify(filteredCricketData, null, 2)}</pre>
+          </div>
+        </section>
+      )}
+      
+      {/* Live Cricket Matches */}
+      {liveMatches.length > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Live Cricket Matches</h2>
           <div className="space-y-4">
-            {upcomingMatches.map((match) => (
-              <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <div className="flex flex-col items-center w-20">
-                    <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="w-12 h-12 object-contain" />
-                    <p className="text-sm font-medium mt-1">{match.homeTeam.shortName}</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(match.matchDate).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </p>
-                    <p className="text-lg font-bold my-1">VS</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(match.matchDate).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col items-center w-20">
-                    <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="w-12 h-12 object-contain" />
-                    <p className="text-sm font-medium mt-1">{match.awayTeam.shortName}</p>
-                  </div>
+            {liveMatches.map((match) => (
+              <div key={match.id} className="border border-green-200 dark:border-green-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">{match.name}</h3>
+                  <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 rounded-full text-xs font-medium">
+                    Live
+                  </span>
                 </div>
-                
-                <div>
-                  <a 
-                    href={`/matches/${match.id}`}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-                  >
-                    View Details
-                  </a>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  <p><span className="font-medium">Status:</span> {match.status}</p>
+                  <p><span className="font-medium">Venue:</span> {match.venue}</p>
+                  <p><span className="font-medium">Date:</span> {new Date(match.dateTimeGMT).toLocaleString()}</p>
+                </div>
+                {match.score && match.score.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <h4 className="font-medium text-sm">Score:</h4>
+                    {match.score.map((scoreItem, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                        <p className="text-sm">{scoreItem.inning}: {scoreItem.r}/{scoreItem.w} ({scoreItem.o} overs)</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      
+      {/* Completed Cricket Matches */}
+      {completedMatches.length > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Completed Cricket Matches</h2>
+          <div className="space-y-4">
+            {completedMatches.map((match) => (
+              <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">{match.name}</h3>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100 rounded-full text-xs font-medium">
+                    Completed
+                  </span>
+                </div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  <p><span className="font-medium">Result:</span> {match.status}</p>
+                  <p><span className="font-medium">Venue:</span> {match.venue}</p>
+                  <p><span className="font-medium">Date:</span> {new Date(match.dateTimeGMT).toLocaleString()}</p>
+                </div>
+                {match.score && match.score.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <h4 className="font-medium text-sm">Score:</h4>
+                    {match.score.map((scoreItem, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                        <p className="text-sm">{scoreItem.inning}: {scoreItem.r}/{scoreItem.w} ({scoreItem.o} overs)</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      
+      {/* Upcoming Cricket Matches */}
+      {upcomingCricketMatches.length > 0 && (
+        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Upcoming IPL Matches</h2>
+          <div className="space-y-4">
+            {upcomingCricketMatches.map((match) => (
+              <div key={match.id} className="border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">{match.name}</h3>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 rounded-full text-xs font-medium">
+                    Upcoming
+                  </span>
+                </div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  <p><span className="font-medium">Venue:</span> {match.venue}</p>
+                  <p><span className="font-medium">Date:</span> {new Date(match.dateTimeGMT).toLocaleString()}</p>
+                  {match.teams && match.teams.length > 0 && (
+                    <p><span className="font-medium">Teams:</span> {match.teams.join(' vs ')}</p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-4">No upcoming matches scheduled.</p>
-        )}
-      </section>
-      
+        </section>
+      )}
       {/* Recent Performance Section */}
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Recent Performance</h2>

@@ -137,7 +137,7 @@ export default function ParticipationPage({ params }: MatchPageProps) {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex flex-col items-center w-16">
-              <img src={matchDetails.homeTeam.logoUrl} alt={matchDetails.homeTeam.name} className="w-10 h-10 object-contain" />
+              <img src={matchDetails.homeTeam.logoUrl || '/default-team-logo.png'} alt={matchDetails.homeTeam.name} className="w-10 h-10 object-contain" />
               <p className="text-xs font-medium mt-1">{matchDetails.homeTeam.shortName}</p>
             </div>
             
@@ -149,7 +149,7 @@ export default function ParticipationPage({ params }: MatchPageProps) {
             </div>
             
             <div className="flex flex-col items-center w-16">
-              <img src={matchDetails.awayTeam.logoUrl} alt={matchDetails.awayTeam.name} className="w-10 h-10 object-contain" />
+              <img src={matchDetails.awayTeam.logoUrl || '/default-team-logo.png'} alt={matchDetails.awayTeam.name} className="w-10 h-10 object-contain" />
               <p className="text-xs font-medium mt-1">{matchDetails.awayTeam.shortName}</p>
             </div>
           </div>

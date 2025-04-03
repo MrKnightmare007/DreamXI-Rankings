@@ -36,26 +36,34 @@ model Session {
 }
 
 model Match {
-  id            String         @id @default(cuid())
+  id            String   @id @default(cuid())
   matchNumber   Int
-  season        Int            @default(2025)
+  season        Int
   matchDate     DateTime
-  homeTeam      Team           @relation("HomeTeam", fields: [homeTeamId], references: [id])
   homeTeamId    String
-  awayTeam      Team           @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  homeTeam      Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
   awayTeamId    String
-  winningTeam   Team?          @relation("WinningTeam", fields: [winningTeamId], references: [id])
+  awayTeam      Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
   winningTeamId String?
+  winningTeam   Team?    @relation("WinningTeam", fields: [winningTeamId], references: [id])
   winByRuns     Int?
   winByWickets  Int?
-  isCompleted   Boolean        @default(false)
+  isCompleted   Boolean  @default(false)
+  isLive        Boolean  @default(false)
+  venue         String?  // Keeping only one venue field
+  status        String?  // To store match status (e.g., "In Progress", "Completed", "Scheduled")
+  externalId    String?  @unique // To store Cricket API match ID for syncing
+  scoreHomeTeam String?  // To store home team score (e.g., "120/6 (15.2 ov)")
+  scoreAwayTeam String?  // To store away team score
   participations Participation[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  @@unique([matchNumber, season])
   @@index([homeTeamId])
   @@index([awayTeamId])
   @@index([winningTeamId])
+  @@index([externalId])
 }
 
 model Team {

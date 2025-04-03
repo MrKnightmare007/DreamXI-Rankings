@@ -1,19 +1,13 @@
-import { notFound } from 'next/navigation';
-import { getAuthSession } from '@/app/api/auth/[...nextauth]/route';
+import { getAuthSession } from '../../api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-interface MatchPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default async function MatchDetailPage({ params }: MatchPageProps) {
+export default async function MatchDetailsPage({ params }: { params: { id: string } }) {
   const session = await getAuthSession();
   const matchId = params.id;
   
-  // Fetch match details
+  // Fetch match details with teams and participations
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     include: {
@@ -26,8 +20,10 @@ export default async function MatchDetailPage({ params }: MatchPageProps) {
             select: {
               id: true,
               name: true,
-              dreamXIUsername: true,
-              skillScore: true
+              email: true,
+              // Remove the 'image' field as it doesn't exist in your schema
+              // Add any other fields that do exist in your User model
+              profilePicture: true
             }
           }
         },
@@ -39,177 +35,186 @@ export default async function MatchDetailPage({ params }: MatchPageProps) {
   });
   
   if (!match) {
-    notFound();
+    return notFound();
   }
   
-  // Check if current user has participated
-  const userParticipation = session ? 
-    match.participations.find(p => p.user.id === session.user.id) : 
-    null;
+  // Find user's participation if logged in
+  const userParticipation = session?.user?.email 
+    ? match.participations.find(p => p.user.email === session.user.email) 
+    : null;
   
-  // Format match date
-  const matchDate = new Date(match.matchDate);
-  const formattedDate = matchDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  // Calculate ranks for all participants
+  let currentRank = 1;
+  let previousPoints = null;
+  let skipRank = 0;
   
-  const formattedTime = matchDate.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
+  const participationsWithRanks = match.participations.map((participation, index) => {
+    if (previousPoints !== null && previousPoints !== participation.points) {
+      currentRank = currentRank + skipRank;
+      skipRank = 0;
+    }
+    
+    skipRank++;
+    previousPoints = participation.points;
+    
+    return {
+      ...participation,
+      rank: currentRank
+    };
   });
   
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">Match #{match.matchNumber}</h1>
-        <Link 
-          href="/matches" 
-          className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
-        >
+      <div className="flex items-center mb-6">
+        <Link href="/matches" className="text-blue-600 hover:text-blue-800 flex items-center">
           ← Back to Matches
         </Link>
+        <h1 className="text-3xl font-bold text-center flex-grow">Match #{match.id.slice(-3)}</h1>
       </div>
       
       {/* Match Header */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-        <div className={`bg-gradient-to-r ${match.isCompleted ? 'from-green-600 to-emerald-600' : new Date() > matchDate ? 'from-purple-600 to-indigo-600' : 'from-blue-600 to-purple-600'} p-6 text-white relative overflow-hidden`}>
-        <div className="absolute top-2 right-2 flex items-center space-x-2">
-          {match.isCompleted ? (
-            <div className="bg-white/20 px-3 py-1 rounded-full flex items-center">
-              <span className="text-sm">Completed</span>
-            </div>
-          ) : new Date() > matchDate ? (
-            <div className="animate-pulse bg-white/20 px-3 py-1 rounded-full flex items-center">
-              <div className="h-2 w-2 bg-white rounded-full mr-2" />
-              <span className="text-sm">Live</span>
-            </div>
-          ) : (
-            <div className="bg-white/20 px-3 py-1 rounded-full text-sm">
-              Upcoming
-            </div>
-          )}
+      <div className={`relative rounded-xl p-8 ${match.completed ? 'bg-green-600' : 'bg-blue-600'} text-white`}>
+        <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-white text-sm font-medium">
+          {match.completed ? 'Completed' : 'Upcoming'}
         </div>
-        <p className="text-sm font-medium mb-2">{formattedDate} • {formattedTime}</p>
+        
         <div className="flex justify-between items-center">
-            <div className="flex flex-col items-center space-y-2">
-              <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="w-20 h-20 object-contain" />
-              <p className="text-xl font-bold">{match.homeTeam.name}</p>
-            </div>
+          <div className="text-center w-1/3">
+            <img 
+              src={match.homeTeam.logoUrl || '/default-team-logo.png'} 
+              alt={match.homeTeam.name} 
+              className="w-16 h-16 mx-auto object-contain bg-white rounded-full p-1"
+            />
+            <h2 className="text-xl font-bold mt-2">{match.homeTeam.name}</h2>
+            <p className="text-sm opacity-80">{match.homeTeam.shortName}</p>
+          </div>
+          
+          <div className="text-center w-1/3">
+            <p className="text-sm opacity-80">
+              {new Date(match.matchDate).toLocaleDateString('en-US', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </p>
+            <p className="text-2xl font-bold my-2">VS</p>
+            <p className="text-sm opacity-80">
+              {new Date(match.matchDate).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+            <p className="text-sm opacity-80 mt-1">{match.venue}</p>
             
-            <div className="text-center">
-              <p className="text-2xl font-bold mb-2">VS</p>
-              {match.isCompleted && match.winningTeam && (
-                <div className="bg-white/20 rounded-full px-4 py-1 text-sm">
+            {match.completed && match.winningTeam && (
+              <div className="mt-3 py-1 px-3 bg-white text-green-700 rounded-full inline-block">
+                <p className="text-sm font-bold">
                   {match.winningTeam.name} won
                   {match.winByRuns ? ` by ${match.winByRuns} runs` : ''}
                   {match.winByWickets ? ` by ${match.winByWickets} wickets` : ''}
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col items-center space-y-2">
-              <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="w-20 h-20 object-contain" />
-              <p className="text-xl font-bold">{match.awayTeam.name}</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Match Status */}
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center space-x-3">
-              <p className="text-lg font-medium">
-                {match.isCompleted ? 'Match Completed' : new Date() > matchDate ? 'Match In Progress' : 'Match Upcoming'}
-              </p>
-              {!match.isCompleted && (
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {matchDate > new Date() ? 
-                    `Starts in ${Math.ceil((matchDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24))} days` : 
-                    'Live updates every 30 seconds'}
-                </span>
-              )}
-            </div>
-            {!match.isCompleted && session && (
-              <Link 
-                href={`/matches/${match.id}/participate`}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-              >
-                Enter Your Dream11 Team
-              </Link>
+                </p>
+              </div>
             )}
           </div>
           
-          {userParticipation && (
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
-              <h3 className="text-lg font-medium mb-2">Your Performance</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Points Scored</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{userParticipation.points}</p>
-                </div>
-                {userParticipation.rank && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Your Rank</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">#{userParticipation.rank}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Participants</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{match.participations.length}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="text-center w-1/3">
+            <img 
+              src={match.awayTeam.logoUrl || '/default-team-logo.png'} 
+              alt={match.awayTeam.name} 
+              className="w-16 h-16 mx-auto object-contain bg-white rounded-full p-1"
+            />
+            <h2 className="text-xl font-bold mt-2">{match.awayTeam.name}</h2>
+            <p className="text-sm opacity-80">{match.awayTeam.shortName}</p>
+          </div>
         </div>
-      </section>
+      </div>
       
-      {/* Leaderboard Section */}
-      {match.participations.length > 0 && (
-        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Leaderboard</h2>
-          
+      {/* User's Participation */}
+      {userParticipation && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <h2 className="text-xl font-bold mb-4">Your Performance</h2>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-600 dark:text-gray-300">Your Points</p>
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">{userParticipation.points}</p>
+            </div>
+            <div>
+              <p className="text-gray-600 dark:text-gray-300">Your Rank</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                #{participationsWithRanks.find(p => p.id === userParticipation.id)?.rank || '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Leaderboard */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h2 className="text-xl font-bold mb-4">Leaderboard</h2>
+        
+        {participationsWithRanks.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead>
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Player</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dream11 Username</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Points</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Skill Score</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Position
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Points
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {match.participations.map((participation, index) => (
-                  <tr 
-                    key={participation.id}
-                    className={session && participation.user.id === session.user.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
-                  >
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                      {index + 1}
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {participationsWithRanks.map((participation) => (
+                  <tr key={participation.id} className={
+                    userParticipation?.id === participation.id 
+                      ? 'bg-blue-50 dark:bg-blue-900/20' 
+                      : ''
+                  }>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
+                        participation.rank === 1 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : participation.rank === 2 
+                            ? 'bg-gray-100 text-gray-800' 
+                            : participation.rank === 3 
+                              ? 'bg-amber-100 text-amber-800' 
+                              : 'bg-gray-50 text-gray-600'
+                      }`}>
+                        {participation.rank}
+                      </span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
-                      {participation.user.name}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="flex items-center">
+                        {participation.user.profilePicture && (
+                          <img 
+                            src={participation.user.profilePicture} 
+                            alt={participation.user.name || 'User'} 
+                            className="w-8 h-8 rounded-full mr-3"
+                          />
+                        )}
+                        <span>{participation.user.name || participation.user.email}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
-                      {participation.user.dreamXIUsername}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 dark:text-green-400">
                       {participation.points}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
-                      {participation.user.skillScore}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
-      )}
+        ) : (
+          <p className="text-center py-4 text-gray-500 dark:text-gray-400">
+            No participants yet.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
