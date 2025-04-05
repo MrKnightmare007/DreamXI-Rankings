@@ -3,6 +3,19 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #0078ff;
+  --primary-dark: #0052cc;
+  --secondary: #ff5722;
+  --accent: #ffb300;
+  --ipl-blue: #004c93;
+  --ipl-orange: #ff7e00;
+  --dream11-blue: #00b2ff;
+  --dream11-red: #ff0045;
+  --success: #00c853;
+  --warning: #ffc107;
+  --error: #f44336;
+  --card-bg: #ffffff;
+  --card-bg-dark: #1e1e1e;
 }
 
 @theme inline {
@@ -16,6 +29,8 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --card-bg: #1e1e1e;
+    --card-bg-dark: #121212;
   }
 }
 
@@ -23,4 +38,71 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Team Colors */
+.team-csk { background-color: #f2c01e; color: #121212; }
+.team-mi { background-color: #004c93; color: #ffffff; }
+.team-rcb { background-color: #d5141c; color: #ffffff; }
+.team-kkr { background-color: #3a225d; color: #ffffff; }
+.team-dc { background-color: #00008b; color: #ffffff; }
+.team-srh { background-color: #ff822a; color: #121212; }
+.team-pbks { background-color: #ed1b24; color: #ffffff; }
+.team-rr { background-color: #ff69b4; color: #ffffff; }
+.team-gt { background-color: #1d428a; color: #ffffff; }
+.team-lsg { background-color: #a4d4ff; color: #121212; }
+
+/* Animations */
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Card styles */
+.ipl-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ipl-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Dream11 style button */
+.dream11-button {
+  background: linear-gradient(135deg, var(--dream11-blue), var(--ipl-blue));
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 124, 255, 0.3);
+}
+
+.dream11-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 124, 255, 0.4);
+}
+
+.dream11-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0, 124, 255, 0.3);
 }

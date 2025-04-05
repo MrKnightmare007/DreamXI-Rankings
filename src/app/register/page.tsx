@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import IPLLoader from '@/components/IPLLoader';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function RegisterPage() {
 
   return (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-8">
-      <h1 className="text-2xl font-bold text-center mb-6 text-blue-600 dark:text-blue-400">Create Account</h1>
+      <h1 className="text-2xl font-bold text-center mb-6">Create Account</h1>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -152,16 +153,23 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
         >
-          {isLoading ? 'Creating Account...' : 'Sign Up'}
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <IPLLoader size="small" text="" />
+              <span className="ml-2">Creating account...</span>
+            </div>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
       
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
+          <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
             Sign in
           </Link>
         </p>

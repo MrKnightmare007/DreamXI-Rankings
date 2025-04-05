@@ -1,29 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 export default function LiveMatchFromAPI({ match }) {
   const [homeTeamLogo, setHomeTeamLogo] = useState('/default-team-logo.png');
   const [awayTeamLogo, setAwayTeamLogo] = useState('/default-team-logo.png');
   const [loading, setLoading] = useState(true);
   const [matchStatus, setMatchStatus] = useState('In Progress');
+  const [homeTeamClass, setHomeTeamClass] = useState('');
+  const [awayTeamClass, setAwayTeamClass] = useState('');
   
-  // Map Cricket API team names to your database team names
+  // Map Cricket API team names to your database team names and CSS classes
   const mapTeamName = (apiTeamName) => {
     const teamMap = {
-      'Kolkata Knight Riders': 'Kolkata Knight Riders',
-      'Mumbai Indians': 'Mumbai Indians',
-      'Chennai Super Kings': 'Chennai Super Kings',
-      'Royal Challengers Bangalore': 'Royal Challengers Bangalore',
-      'Delhi Capitals': 'Delhi Capitals',
-      'Sunrisers Hyderabad': 'Sunrisers Hyderabad',
-      'Punjab Kings': 'Punjab Kings',
-      'Rajasthan Royals': 'Rajasthan Royals',
-      'Gujarat Titans': 'Gujarat Titans',
-      'Lucknow Super Giants': 'Lucknow Super Giants'
+      'Kolkata Knight Riders': { name: 'Kolkata Knight Riders', class: 'team-kkr' },
+      'Mumbai Indians': { name: 'Mumbai Indians', class: 'team-mi' },
+      'Chennai Super Kings': { name: 'Chennai Super Kings', class: 'team-csk' },
+      'Royal Challengers Bangalore': { name: 'Royal Challengers Bangalore', class: 'team-rcb' },
+      'Delhi Capitals': { name: 'Delhi Capitals', class: 'team-dc' },
+      'Sunrisers Hyderabad': { name: 'Sunrisers Hyderabad', class: 'team-srh' },
+      'Punjab Kings': { name: 'Punjab Kings', class: 'team-pbks' },
+      'Rajasthan Royals': { name: 'Rajasthan Royals', class: 'team-rr' },
+      'Gujarat Titans': { name: 'Gujarat Titans', class: 'team-gt' },
+      'Lucknow Super Giants': { name: 'Lucknow Super Giants', class: 'team-lsg' }
     };
     
-    return teamMap[apiTeamName] || apiTeamName;
+    return teamMap[apiTeamName] || { name: apiTeamName, class: '' };
   };
   
   const fetchCurrentMatchStatus = async () => {
@@ -31,7 +34,6 @@ export default function LiveMatchFromAPI({ match }) {
       const response = await fetch('https://api.cricapi.com/v1/currentMatches?apikey=8ab9eb0f-8b69-4068-b7b4-8ccb975fd254&offset=0');
       if (response.ok) {
         const data = await response.json();
-        console.log('Current Matches Data:', data);
         if (data.data) {
           // Get the team names from the current match
           const homeTeamName = match.teams[0];
@@ -66,17 +68,17 @@ export default function LiveMatchFromAPI({ match }) {
             const teams = teamsData.data;
             
             // Find home team
-            const homeTeamName = mapTeamName(match.teams[0]);
+            const homeTeamInfo = mapTeamName(match.teams[0]);
             const homeTeam = teams.find(team => 
-              team.name.toLowerCase() === homeTeamName.toLowerCase() || 
-              team.shortName.toLowerCase() === homeTeamName.toLowerCase()
+              team.name.toLowerCase() === homeTeamInfo.name.toLowerCase() || 
+              team.shortName.toLowerCase() === homeTeamInfo.name.toLowerCase()
             );
             
             // Find away team
-            const awayTeamName = mapTeamName(match.teams[1]);
+            const awayTeamInfo = mapTeamName(match.teams[1]);
             const awayTeam = teams.find(team => 
-              team.name.toLowerCase() === awayTeamName.toLowerCase() || 
-              team.shortName.toLowerCase() === awayTeamName.toLowerCase()
+              team.name.toLowerCase() === awayTeamInfo.name.toLowerCase() || 
+              team.shortName.toLowerCase() === awayTeamInfo.name.toLowerCase()
             );
             
             if (homeTeam && homeTeam.logoUrl) {
@@ -86,6 +88,10 @@ export default function LiveMatchFromAPI({ match }) {
             if (awayTeam && awayTeam.logoUrl) {
               setAwayTeamLogo(awayTeam.logoUrl);
             }
+            
+            // Set team classes for styling
+            setHomeTeamClass(homeTeamInfo.class);
+            setAwayTeamClass(awayTeamInfo.class);
           }
         }
       } catch (error) {
@@ -96,73 +102,91 @@ export default function LiveMatchFromAPI({ match }) {
     };
     
     fetchTeamLogos();
-    fetchCurrentMatchStatus(); // Fetch the current match status when component mounts
-  }, [match.teams]);
+    fetchCurrentMatchStatus();
+    
+    // Set up interval to refresh match status
+    const intervalId = setInterval(fetchCurrentMatchStatus, 60000); // Every minute
+    
+    return () => clearInterval(intervalId);
+  }, [match]);
   
-  const handleSync = async () => {
-    // Refresh the current match status instead of syncing with the database
-    await fetchCurrentMatchStatus();
-  };
+  if (loading) {
+    return (
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-32 rounded-lg"></div>
+    );
+  }
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center relative">
-      {/* LIVE indicator moved to top left */}
-      <span className="absolute top-2 left-2 text-xs animate-pulse font-bold text-red-500 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
-        LIVE
-      </span>
-      
-      <div className="flex items-center justify-between w-full">
-        {/* Home Team - Left Side */}
-        <div className="flex flex-col items-center w-1/3">
-          <img 
-            src={homeTeamLogo} 
-            alt={match.teams[0]} 
-            className="w-12 h-12 object-contain" 
-            onError={() => setHomeTeamLogo('/default-team-logo.png')} 
-          />
-          <p className="text-sm font-medium mt-1">{match.teams[0]}</p>
-        </div>
-        
-        {/* Match Info - Center */}
-        <div className="text-center w-1/3">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {new Date(match.dateTimeGMT).toLocaleDateString('en-US', {
-              day: 'numeric',
-              month: 'short'
-            })}
-          </p>
-          <div className="flex items-center justify-center my-1">
-            <span className="text-lg font-bold">VS</span>
-          </div>
-          {/* Status shown below VS - now using the fetched status */}
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="ipl-card overflow-hidden"
+    >
+      <div className="flex flex-col">
+        {/* Match header with status */}
+        <div className="bg-gradient-to-r from-[var(--ipl-blue)] to-[#003366] text-white p-3 text-center">
+          <div className="text-sm font-semibold">{match.name || 'IPL Match'}</div>
+          <div className="text-xs opacity-80">{match.venue || 'Venue TBD'}</div>
+          <motion.div 
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            className={`mt-1 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+              matchStatus.includes('won') ? 'bg-green-500' : 
+              matchStatus === 'In Progress' ? 'bg-yellow-500 text-black' : 'bg-blue-600'
+            }`}
+          >
             {matchStatus}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {match.venue}
-          </p>
+          </motion.div>
         </div>
         
-        {/* Away Team - Right Side */}
-        <div className="flex flex-col items-center w-1/3">
-          <img 
-            src={awayTeamLogo} 
-            alt={match.teams[1]} 
-            className="w-12 h-12 object-contain" 
-            onError={() => setAwayTeamLogo('/default-team-logo.png')} 
-          />
-          <p className="text-sm font-medium mt-1">{match.teams[1]}</p>
+        {/* Teams section */}
+        <div className="p-4 flex justify-between items-center">
+          {/* Home team */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="flex flex-col items-center text-center w-2/5"
+          >
+            <div className={`w-16 h-16 rounded-full p-1 flex items-center justify-center ${homeTeamClass || 'bg-gray-100 dark:bg-gray-700'}`}>
+              <img 
+                src={homeTeamLogo} 
+                alt={match.teams[0]} 
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <div className="mt-2 font-semibold text-sm">{match.teams[0]}</div>
+            {match.score && match.score[0] && (
+              <div className="text-xs mt-1">{match.score[0]}</div>
+            )}
+          </motion.div>
+          
+          {/* VS */}
+          <div className="flex flex-col items-center">
+            <div className="text-lg font-bold text-gray-400">VS</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {new Date(match.date).toLocaleDateString()}
+            </div>
+          </div>
+          
+          {/* Away team */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="flex flex-col items-center text-center w-2/5"
+          >
+            <div className={`w-16 h-16 rounded-full p-1 flex items-center justify-center ${awayTeamClass || 'bg-gray-100 dark:bg-gray-700'}`}>
+              <img 
+                src={awayTeamLogo} 
+                alt={match.teams[1]} 
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <div className="mt-2 font-semibold text-sm">{match.teams[1]}</div>
+            {match.score && match.score[1] && (
+              <div className="text-xs mt-1">{match.score[1]}</div>
+            )}
+          </motion.div>
         </div>
       </div>
-      
-      <div>
-        <button 
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-          onClick={handleSync}
-        >
-          Refresh Status
-        </button>
-      </div>
-    </div>
+    </motion.div>
   );
 }

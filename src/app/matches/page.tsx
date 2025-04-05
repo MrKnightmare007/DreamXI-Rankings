@@ -133,6 +133,31 @@ function renderMatchesContent(matchesData: any, session: any) {
   // Cricket API matches
   const cricketApiMatches = matchesData.cricketApi || { upcoming: [], live: [], completed: [] };
   
+  // Helper functions for team colors
+  const getTeamBgColor = (shortName) => {
+    switch(shortName) {
+      case 'CSK': return 'bg-yellow-400';
+      case 'MI': return 'bg-blue-600';
+      case 'RCB': return 'bg-red-600';
+      case 'KKR': return 'bg-purple-800';
+      case 'DC': return 'bg-blue-500';
+      case 'SRH': return 'bg-orange-500';
+      case 'PBKS': return 'bg-red-500';
+      case 'RR': return 'bg-pink-600';
+      case 'GT': return 'bg-blue-700';
+      case 'LSG': return 'bg-teal-500';
+      default: return 'bg-gray-500';
+    }
+  };
+  
+  const getTeamTextColor = (shortName) => {
+    switch(shortName) {
+      case 'CSK': 
+      case 'SRH': return 'text-black';
+      default: return 'text-white';
+    }
+  };
+  
   // Combine matches from both sources
   const upcomingMatches = [...dbUpcomingMatches].sort(
     (a, b) => new Date(a.matchDate).getTime() - new Date(b.matchDate).getTime()
@@ -232,138 +257,182 @@ function renderMatchesContent(matchesData: any, session: any) {
         </div>
       </section>
       
-      {/* Upcoming Matches Section - Now Second */}
+      {/* Upcoming Matches Section */}
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Upcoming Matches</h2>
         
         <div className="space-y-4">
-          {upcomingMatches.length > 0 && upcomingMatches.slice(0, 3).map((match) => (
-            <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
-              <div className="flex items-center justify-between w-full">
-                {/* Home Team - Left Side */}
-                <div className="flex flex-col items-center w-1/3">
-                  <img src={match.homeTeam.logoUrl || '/default-team-logo.png'} alt={match.homeTeam.name} className="w-12 h-12 object-contain" />
-                  <p className="text-sm font-medium mt-1">{match.homeTeam.name}</p>
-                  <p className="text-xs text-gray-500">{match.homeTeam.shortName}</p>
-                </div>
-                
-                {/* Match Info - Center */}
-                <div className="text-center w-1/3">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(match.matchDate).toLocaleDateString('en-US', {
-                      day: 'numeric',
-                      month: 'short'
-                    })}
-                  </p>
-                  <p className="text-lg font-bold my-1">VS</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(match.matchDate).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
-                  {/* Added venue information */}
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {match.venue}
-                  </p>
-                </div>
-                
-                {/* Away Team - Right Side */}
-                <div className="flex flex-col items-center w-1/3">
-                  <img src={match.awayTeam.logoUrl || '/default-team-logo.png'} alt={match.awayTeam.name} className="w-12 h-12 object-contain" />
-                  <p className="text-sm font-medium mt-1">{match.awayTeam.name}</p>
-                  <p className="text-xs text-gray-500">{match.awayTeam.shortName}</p>
-                </div>
+          {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map((match) => (
+            <div key={match.id} className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              {/* Match header with venue */}
+              <div className="bg-blue-600 text-white p-2 text-center text-sm">
+                {match.homeTeam.name} vs {match.awayTeam.name}, Match #{match.matchNumber || ''}
+                <div className="text-xs opacity-80">{match.venue}</div>
               </div>
               
-              <div>
-                <Link 
-                  href={`/matches/${match.id}`}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-                >
-                  View
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      
-      {/* Completed Matches Section - Now Last */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Completed Matches</h2>
-        
-        <div className="space-y-4">
-          {dbCompletedMatches.length > 0 && dbCompletedMatches.map((match) => {
-            // Fix: Check if participations array exists and has items before accessing index 0
-            const userParticipation = match.participations && match.participations.length > 0 
-            ? match.participations[0] 
-            : null;
-            
-            return (
-              <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
+              <div className="p-4">
                 <div className="flex items-center justify-between w-full">
                   {/* Home Team - Left Side */}
                   <div className="flex flex-col items-center w-1/3">
-                    <img src={match.homeTeam.logoUrl || '/default-team-logo.png'} alt={match.homeTeam.name} className="w-12 h-12 object-contain" />
-                    <p className={`text-sm font-medium mt-1 ${match.winningTeamId === match.homeTeamId ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
-                      {match.homeTeam.name}
-                    </p>
-                    <p className="text-xs text-gray-500">{match.homeTeam.shortName}</p>
+                    <div className="relative">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getTeamBgColor(match.homeTeam.shortName)} ${getTeamTextColor(match.homeTeam.shortName)}`}>
+                        <span className="font-bold text-lg">{match.homeTeam.shortName}</span>
+                      </div>
+                      <img 
+                        src={match.homeTeam.logoUrl || '/default-team-logo.png'} 
+                        alt={match.homeTeam.name} 
+                        className="w-8 h-8 object-contain absolute -bottom-1 -right-1 bg-white rounded-md p-1 shadow-md"
+                      />
+                    </div>
+                    <p className="text-sm font-medium mt-2">{match.homeTeam.name}</p>
                   </div>
                   
                   {/* Match Info - Center */}
                   <div className="text-center w-1/3">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       {new Date(match.matchDate).toLocaleDateString('en-US', {
                         day: 'numeric',
                         month: 'short'
                       })}
                     </p>
-                    <p className="text-lg font-bold my-1">VS</p>
-                    {match.winningTeam && (
-                      <p className="text-xs font-medium text-green-600 dark:text-green-400">
-                        {match.winningTeam.name} won
-                        {match.winByRuns ? ` by ${match.winByRuns} runs` : ''}
-                        {match.winByWickets ? ` by ${match.winByWickets} wickets` : ''}
-                      </p>
-                    )}
-                    {/* Added venue information */}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {match.venue}
+                    <p className="text-xl font-bold my-2">VS</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(match.matchDate).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </p>
                   </div>
                   
                   {/* Away Team - Right Side */}
                   <div className="flex flex-col items-center w-1/3">
-                    <img src={match.awayTeam.logoUrl || '/default-team-logo.png'} alt={match.awayTeam.name} className="w-12 h-12 object-contain" />
-                    <p className={`text-sm font-medium mt-1 ${match.winningTeamId === match.awayTeamId ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
-                      {match.awayTeam.name}
-                    </p>
-                    <p className="text-xs text-gray-500">{match.awayTeam.shortName}</p>
+                    <div className="relative">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getTeamBgColor(match.awayTeam.shortName)} ${getTeamTextColor(match.awayTeam.shortName)}`}>
+                        <span className="font-bold text-lg">{match.awayTeam.shortName}</span>
+                      </div>
+                      <img 
+                        src={match.awayTeam.logoUrl || '/default-team-logo.png'} 
+                        alt={match.awayTeam.name} 
+                        className="w-8 h-8 object-contain absolute -bottom-1 -right-1 bg-white rounded-md p-1 shadow-md"
+                      />
+                    </div>
+                    <p className="text-sm font-medium mt-2">{match.awayTeam.name}</p>
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-end ml-4">
-                  {userParticipation && (
-                    <div className="text-right mb-2">
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Your Points</p>
-                      <p className="text-lg font-bold text-green-600 dark:text-green-400">{userParticipation.points}</p>
-                      {userParticipation.rank && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Rank: #{userParticipation.rank}</p>
-                      )}
-                    </div>
-                  )}
+                <div className="mt-4 text-center">
                   <Link 
                     href={`/matches/${match.id}`}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors inline-block"
                   >
-                    View
+                    View Match
                   </Link>
                 </div>
               </div>
+            </div>
+          )) : (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No upcoming matches scheduled.</p>
+          )}
+        </div>
+      </section>
+      
+      {/* Completed Matches Section */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold mb-4 text-blue-600 dark:text-blue-400">Completed Matches</h2>
+        
+        <div className="space-y-4">
+          {dbCompletedMatches.length > 0 ? dbCompletedMatches.map((match) => {
+            // Check if participations array exists and has items before accessing index 0
+            const userParticipation = match.participations && match.participations.length > 0 
+            ? match.participations[0] 
+            : null;
+            
+            return (
+              <div key={match.id} className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                {/* Match header with result */}
+                <div className="bg-green-600 text-white p-2 text-center text-sm">
+                  {match.homeTeam.name} vs {match.awayTeam.name}, Match #{match.matchNumber || ''}
+                  <div className="text-xs opacity-80">{match.venue}</div>
+                </div>
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between w-full">
+                    {/* Home Team - Left Side */}
+                    <div className="flex flex-col items-center w-1/3">
+                      <div className="relative">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getTeamBgColor(match.homeTeam.shortName)} ${getTeamTextColor(match.homeTeam.shortName)} ${match.winningTeamId === match.homeTeamId ? 'ring-2 ring-green-500' : ''}`}>
+                          <span className="font-bold text-lg">{match.homeTeam.shortName}</span>
+                        </div>
+                        <img 
+                          src={match.homeTeam.logoUrl || '/default-team-logo.png'} 
+                          alt={match.homeTeam.name} 
+                          className="w-8 h-8 object-contain absolute -bottom-1 -right-1 bg-white rounded-md p-1 shadow-md"
+                        />
+                      </div>
+                      <p className={`text-sm font-medium mt-2 ${match.winningTeamId === match.homeTeamId ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
+                        {match.homeTeam.name}
+                      </p>
+                    </div>
+                    
+                    {/* Match Info - Center */}
+                    <div className="text-center w-1/3">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(match.matchDate).toLocaleDateString('en-US', {
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </p>
+                      <p className="text-xl font-bold my-2">VS</p>
+                      {match.winningTeam && (
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                          {match.winningTeam.name} won
+                          {match.winByRuns ? ` by ${match.winByRuns} runs` : ''}
+                          {match.winByWickets ? ` by ${match.winByWickets} wickets` : ''}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Away Team - Right Side */}
+                    <div className="flex flex-col items-center w-1/3">
+                      <div className="relative">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getTeamBgColor(match.awayTeam.shortName)} ${getTeamTextColor(match.awayTeam.shortName)} ${match.winningTeamId === match.awayTeamId ? 'ring-2 ring-green-500' : ''}`}>
+                          <span className="font-bold text-lg">{match.awayTeam.shortName}</span>
+                        </div>
+                        <img 
+                          src={match.awayTeam.logoUrl || '/default-team-logo.png'} 
+                          alt={match.awayTeam.name} 
+                          className="w-8 h-8 object-contain absolute -bottom-1 -right-1 bg-white rounded-md p-1 shadow-md"
+                        />
+                      </div>
+                      <p className={`text-sm font-medium mt-2 ${match.winningTeamId === match.awayTeamId ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
+                        {match.awayTeam.name}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-between items-center">
+                    {userParticipation && (
+                      <div className="text-left">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">Your Points</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">{userParticipation.points}</p>
+                        {userParticipation.rank && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Rank: #{userParticipation.rank}</p>
+                        )}
+                      </div>
+                    )}
+                    <Link 
+                      href={`/matches/${match.id}`}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              </div>
             );
-          })}
+          }) : (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No completed matches yet.</p>
+          )}
         </div>
       </section>
     </div>

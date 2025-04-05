@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import IPLLoader from '@/components/IPLLoader';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
+      toast.error('An error occurred during login');
+      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -39,9 +41,9 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-8">
-      <h1 className="text-2xl font-bold text-center mb-6 text-blue-600 dark:text-blue-400">Sign In</h1>
+      <h1 className="text-2xl font-bold text-center mb-6">Sign In</h1>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Email
@@ -51,7 +53,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             required
           />
         </div>
@@ -65,7 +67,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
             required
           />
         </div>
@@ -73,17 +75,21 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isLoading ? (
+            <IPLLoader inline size="small" text="Signing in..." />
+          ) : (
+            'Sign In'
+          )}
         </button>
       </form>
       
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Don't have an account?{' '}
-          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-            Sign up
+          <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Create one
           </Link>
         </p>
       </div>
