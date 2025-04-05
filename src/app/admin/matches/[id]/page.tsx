@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import AdminMatchForm from '@/components/AdminMatchForm';
+import { ArrowLeft } from 'lucide-react'; // Add this import
 
 export default async function AdminMatchDetailsPage({ params }: { params: { id: string } }) {
   const session = await getAuthSession();
@@ -65,13 +66,17 @@ export default async function AdminMatchDetailsPage({ params }: { params: { id: 
   });
   
   return (
-    <div className="space-y-8">
-      <div className="flex items-center mb-6">
-        <Link href="/admin" className="text-blue-600 hover:text-blue-800 flex items-center">
-          ← Back to Admin Matches
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Link href="/admin" className="text-blue-500 hover:text-blue-700 flex items-center gap-1">
+          <ArrowLeft size={16} />
+          Back to Admin Matches
         </Link>
-        <h1 className="text-3xl font-bold text-center flex-grow">Admin: Match #{match.id.slice(-3)}</h1>
       </div>
+      
+      <h1 className="text-2xl font-bold">
+        Admin: Match #{match.matchNumber || match.id.substring(0, 2)}
+      </h1>
       
       {/* Match Header */}
       <div className={`relative rounded-xl p-8 ${match.isCompleted ? 'bg-green-600' : 'bg-blue-600'} text-white`}>

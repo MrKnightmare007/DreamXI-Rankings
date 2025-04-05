@@ -11,18 +11,22 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  dreamXIUsername String        @unique
-  email         String         @unique
-  skillScore    Int            @default(0)
-  profilePicture String?        
-  password      String
-  role          Role           @default(USER)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  participations Participation[]
-  sessions      Session[]
+  id                String          @id @default(cuid())
+  name              String?
+  email             String?         @unique
+  emailVerified     DateTime?
+  image             String?
+  dreamXIUsername   String?         @unique
+  role              Role            @default(USER)
+  skillScore        Int             @default(0)
+  totalMoneyGained  Int             @default(0)
+  totalMoneyLost    Int             @default(0)
+  profilePicture    String?        
+  password          String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  participations    Participation[]
+  sessions          Session[]
 }
 
 model Session {
@@ -80,19 +84,20 @@ model Team {
 }
 
 model Participation {
-  id            String   @id @default(cuid())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  match         Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  matchId       String
-  points        Int      @default(0)
-  rank          Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  matchId     String
+  points      Int      @default(0)
+  rank        Int?
+  moneySpent  Int      @default(50)  // Add this field
+  moneyGained Int      @default(0)   // Add this field
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   @@unique([userId, matchId])
-  @@index([userId])
-  @@index([matchId])
 }
 
 enum Role {

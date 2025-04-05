@@ -166,40 +166,53 @@ function renderMatchesContent(matchesData: any, session: any) {
         
         <div className="space-y-4">
           {dbLiveMatches.length > 0 ? dbLiveMatches.map((match) => (
-            <div key={match.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <div className="flex flex-col items-center w-20">
+            <div key={match.id} className="relative border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
+              {/* LIVE indicator in top left */}
+              <div className="absolute top-2 left-2">
+                <span className="flex items-center px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-md">
+                  <span className="animate-pulse mr-1 h-2 w-2 rounded-full bg-white"></span>
+                  LIVE
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between w-full pt-6">
+                {/* Home Team - Left Side */}
+                <div className="flex flex-col items-center w-1/3">
                   <img src={match.homeTeam.logoUrl || '/default-team-logo.png'} alt={match.homeTeam.name} className="w-12 h-12 object-contain" />
-                  <p className="text-sm font-medium mt-1">{match.homeTeam.shortName}</p>
+                  <p className="text-sm font-medium mt-1">{match.homeTeam.name}</p>
+                  <p className="text-xs text-gray-500">{match.homeTeam.shortName}</p>
                 </div>
                 
-                <div className="text-center">
+                {/* Match Info - Center */}
+                <div className="text-center w-1/3">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(match.matchDate).toLocaleDateString('en-US', {
                       day: 'numeric',
                       month: 'short'
                     })}
                   </p>
-                  <div className="flex items-center space-x-2 my-1">
-                    <span className="text-sm font-medium">{match.homeTeam.shortName}</span>
-                    <span className="text-xs animate-pulse font-bold text-red-500">LIVE</span>
-                    <span className="text-sm font-medium">{match.awayTeam.shortName}</span>
-                  </div>
+                  <p className="text-lg font-bold my-1">VS</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(match.matchDate).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit'
                     })}
                   </p>
+                  {/* Added venue information */}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {match.venue}
+                  </p>
                 </div>
                 
-                <div className="flex flex-col items-center w-20">
+                {/* Away Team - Right Side */}
+                <div className="flex flex-col items-center w-1/3">
                   <img src={match.awayTeam.logoUrl || '/default-team-logo.png'} alt={match.awayTeam.name} className="w-12 h-12 object-contain" />
-                  <p className="text-sm font-medium mt-1">{match.awayTeam.shortName}</p>
+                  <p className="text-sm font-medium mt-1">{match.awayTeam.name}</p>
+                  <p className="text-xs text-gray-500">{match.awayTeam.shortName}</p>
                 </div>
               </div>
               
-              <div>
+              <div className="mt-4 text-right">
                 <Link 
                   href={`/matches/${match.id}`}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
@@ -356,3 +369,72 @@ function renderMatchesContent(matchesData: any, session: any) {
     </div>
   );
 }
+
+// REMOVE THIS ENTIRE BLOCK BELOW
+// {/* Live Matches */}
+// <div className="bg-gray-900 rounded-xl p-6 shadow-lg">
+//   <h2 className="text-xl font-bold text-blue-400 mb-4">Live Matches</h2>
+//   
+//   {liveMatches.length > 0 ? (
+//     <div className="space-y-4">
+//       {liveMatches.map((match) => (
+//         <div key={match.id} className="relative bg-gray-800 rounded-lg p-4 border border-gray-700">
+//           <div className="absolute top-2 left-2">
+//             <span className="flex items-center px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-md">
+//               <span className="animate-pulse mr-1 h-2 w-2 rounded-full bg-white"></span>
+//               LIVE
+//             </span>
+//           </div>
+//           
+//           <div className="flex justify-between items-center">
+//             <div className="text-center w-1/4">
+//               <img 
+//                 src={match.homeTeam.logoUrl || '/default-team-logo.png'} 
+//                 alt={match.homeTeam.name} 
+//                 className="w-12 h-12 mx-auto object-contain bg-white rounded-full p-1"
+//               />
+//               <p className="text-sm font-medium mt-2 text-white">{match.homeTeam.shortName}</p>
+//             </div>
+//             
+//             <div className="text-center w-2/4">
+//               <p className="text-xs text-gray-400">
+//                 {new Date(match.matchDate).toLocaleDateString('en-US', {
+//                   month: 'short',
+//                   day: 'numeric'
+//                 })}
+//               </p>
+//               <p className="text-lg font-bold my-2 text-white">VS</p>
+//               <p className="text-xs text-gray-400">
+//                 {new Date(match.matchDate).toLocaleTimeString('en-US', {
+//                   hour: '2-digit',
+//                   minute: '2-digit'
+//                 })}
+//               </p>
+//               <p className="text-xs text-gray-400 mt-1 truncate">{match.venue}</p>
+//             </div>
+//             
+//             <div className="text-center w-1/4">
+//               <img 
+//                 src={match.awayTeam.logoUrl || '/default-team-logo.png'} 
+//                 alt={match.awayTeam.name} 
+//                 className="w-12 h-12 mx-auto object-contain bg-white rounded-full p-1"
+//               />
+//               <p className="text-sm font-medium mt-2 text-white">{match.awayTeam.shortName}</p>
+//             </div>
+//           </div>
+//           
+//           <div className="mt-4 text-right">
+//             <Link 
+//               href={`/matches/${match.id}`}
+//               className="inline-block px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+//             >
+//               View
+//             </Link>
+//           </div>
+//         </div>
+//       ))}
+//     </div>
+//   ) : (
+//     <p className="text-center py-6 text-gray-400">No live matches at the moment.</p>
+//   )}
+// </div>

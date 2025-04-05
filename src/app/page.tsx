@@ -1,7 +1,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { getAuthSession } from './api/auth/[...nextauth]/route';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is logged in
+  const session = await getAuthSession();
+  
+  // If user is logged in, redirect to dashboard
+  if (session?.user) {
+    // If user is admin, redirect to admin page (keeping your existing admin redirect logic)
+    if (session.user.role === 'ADMIN') {
+      redirect('/admin');
+    } else {
+      // For regular users, redirect to dashboard
+      redirect('/dashboard');
+    }
+  }
+  
+  // Continue with the regular home page for non-logged in users
   return (
     <div className="flex flex-col gap-8">
       {/* Hero Section */}

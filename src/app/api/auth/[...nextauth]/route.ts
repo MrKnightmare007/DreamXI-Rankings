@@ -66,6 +66,25 @@ export const authOptions: NextAuthOptions = {
         session.user.dreamXIUsername = token.dreamXIUsername as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Check if the URL is a sign-in callback
+      if (url.startsWith(baseUrl) && url.includes('/api/auth/callback')) {
+        // Get the user's session to check their role
+        const session = await getServerSession(authOptions);
+        
+        // If user is an admin, redirect to admin dashboard
+        if (session?.user?.role === 'ADMIN') {
+          return `${baseUrl}/admin`;
+        }
+        
+        // Default redirect for non-admin users
+        return `${baseUrl}/dashboard`;
+      }
+      
+      // For all other cases, use the default behavior
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl;
     }
   },
   pages: {

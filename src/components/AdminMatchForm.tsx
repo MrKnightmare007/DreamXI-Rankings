@@ -1,30 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminMatchForm({ match, users }) {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [winningTeamId, setWinningTeamId] = useState(match.winningTeamId || '');
   const [winByRuns, setWinByRuns] = useState(match.winByRuns || 0);
   const [winByWickets, setWinByWickets] = useState(match.winByWickets || 0);
   const [isCompleted, setIsCompleted] = useState(match.isCompleted || false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
   // State for user participations
+  // First, update the participations state to include moneySpent and moneyGained
+  // At the beginning of your component, add this console log
+  console.log('Initial match participations:', match.participations);
+  
+  // Then check the state initialization
   const [participations, setParticipations] = useState(
-    match.participations.map(p => ({
-      id: p.id,
-      userId: p.userId,
-      points: p.points,
-      userName: p.user.name || p.user.email || p.user.dreamXIUsername
-    }))
+    match.participations.map(p => {
+      console.log('Mapping participation:', p);
+      return {
+        id: p.id,
+        userId: p.userId,
+        points: p.points,
+        moneySpent: p.moneySpent || 0,
+        moneyGained: p.moneyGained || 0,
+        userName: p.user?.name || p.user?.email || p.user?.dreamXIUsername || 'Unknown User'
+      };
+    })
   );
   
-  // State for adding new participation
-  const [newUserId, setNewUserId] = useState('');
-  const [newPoints, setNewPoints] = useState(0);
+  // State for adding new participation - replace the individual states with a combined object
+  const [newParticipation, setNewParticipation] = useState({
+    userId: '',
+    points: 0,
+    rank: null,
+    moneySpent: 0,
+    moneyGained: 0
+  });
   
+  // Add this debugging code at the beginning of your component
+  useEffect(() => {
+    console.log('Participations state:', participations);
+  }, [participations]);
+
   const handleUpdateMatch = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
@@ -106,12 +129,12 @@ export default function AdminMatchForm({ match, users }) {
   const handleAddParticipation = async (e) => {
     e.preventDefault();
     
-    if (!newUserId) {
+    if (!newParticipation.userId) {
       alert('Please select a user');
       return;
     }
     
-    setIsUpdating(true);
+    setIsSubmitting(true);
     
     try {
       const response = await fetch(`/api/admin/matches/${match.id}/participations`, {
@@ -120,8 +143,11 @@ export default function AdminMatchForm({ match, users }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: newUserId,
-          points: newPoints
+          userId: newParticipation.userId,
+          points: newParticipation.points,
+          rank: newParticipation.rank,
+          moneySpent: newParticipation.moneySpent,
+          moneyGained: newParticipation.moneyGained
         }),
       });
       
@@ -131,32 +157,50 @@ export default function AdminMatchForm({ match, users }) {
       
       const data = await response.json();
       
+      // Update this part in your handleAddParticipation function
       // Add new participation to the list
-      const user = users.find(u => u.id === newUserId);
+      const user = users.find(u => u.id === newParticipation.userId);
       setParticipations([
         ...participations,
         {
           id: data.id,
-          userId: newUserId,
-          points: newPoints,
+          userId: newParticipation.userId,
+          points: newParticipation.points,
+          moneySpent: newParticipation.moneySpent,
+          moneyGained: newParticipation.moneyGained,
           userName: user.name || user.email || user.dreamXIUsername
         }
       ]);
       
       // Reset form
-      setNewUserId('');
-      setNewPoints(0);
+      setNewParticipation({
+        userId: '',
+        points: 0,
+        rank: null,
+        moneySpent: 50,
+        moneyGained: 0
+      });
       
       router.refresh();
     } catch (error) {
       console.error('Error adding participation:', error);
       alert('Failed to add participation. Please try again.');
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
   
+  // In the handleDeleteParticipation function
   const handleDeleteParticipation = async (participationId) => {
+    console.log('Attempting to delete participation with ID:', participationId);
+    console.log('Type of participationId:', typeof participationId);
+    
+    if (!participationId) {
+      console.error('Participation ID is undefined');
+      alert('Cannot delete participation: ID is missing');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to delete this participation?')) {
       return;
     }
@@ -270,55 +314,88 @@ export default function AdminMatchForm({ match, users }) {
         <h2 className="text-xl font-bold mb-4">User Participations</h2>
         
         {/* Add New Participation */}
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <h3 className="text-lg font-medium mb-3">Add New Participation</h3>
+        <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Add New Participation</h3>
           
-          <form onSubmit={handleAddParticipation} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                User
-              </label>
-              <select
-                value={newUserId}
-                onChange={(e) => setNewUserId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-white"
+              <label htmlFor="userId" className="block text-sm font-medium mb-1">User</label>
+              <select 
+                id="userId" 
+                value={newParticipation.userId} 
+                onChange={(e) => setNewParticipation({...newParticipation, userId: e.target.value})}
+                className="w-full px-3 py-2 border rounded-md bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
               >
                 <option value="">Select User</option>
                 {users.map(user => (
-                  <option key={user.id} value={user.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    {user.name || user.email || user.dreamXIUsername}
+                  <option key={user.id} value={user.id} className="text-gray-900 bg-white dark:text-white dark:bg-gray-700">
+                    {user.name} ({user.dreamXIUsername || 'No username'})
                   </option>
                 ))}
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Points
-              </label>
-              <input
-                type="number"
-                value={newPoints === 0 ? '' : newPoints}
-                placeholder="Enter points"
-                onChange={(e) => {
-                  // Use direct value assignment instead of Number() to avoid leading zeros
-                  setNewPoints(e.target.value === '' ? 0 : parseInt(e.target.value, 10))
-                }}
+              <label htmlFor="points" className="block text-sm font-medium mb-1">Points</label>
+              <input 
+                type="number" 
+                id="points" 
+                value={newParticipation.points || ''} 
+                onChange={(e) => setNewParticipation({...newParticipation, points: parseInt(e.target.value) || 0})}
+                className="w-full px-3 py-2 border rounded-md"
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter points"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label htmlFor="rank" className="block text-sm font-medium mb-1">Rank (optional)</label>
+              <input 
+                type="number" 
+                id="rank" 
+                value={newParticipation.rank || ''} 
+                onChange={(e) => setNewParticipation({...newParticipation, rank: e.target.value ? parseInt(e.target.value) : null})}
+                className="w-full px-3 py-2 border rounded-md"
+                min="1"
               />
             </div>
             
-            <div className="flex items-end">
-              <button
-                type="submit"
-                disabled={isUpdating || !newUserId}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                Add Participation
-              </button>
+            <div>
+              <label htmlFor="moneySpent" className="block text-sm font-medium mb-1">Money Spent (₹)</label>
+              <input 
+                type="number" 
+                id="moneySpent" 
+                value={newParticipation.moneySpent || ''} 
+                onChange={(e) => setNewParticipation({...newParticipation, moneySpent: parseInt(e.target.value) || 0})}
+                className="w-full px-3 py-2 border rounded-md"
+                min="0"
+                placeholder="Enter money spent"
+              />
             </div>
-          </form>
+            
+            <div>
+              <label htmlFor="moneyGained" className="block text-sm font-medium mb-1">Money Gained (₹)</label>
+              <input 
+                type="number" 
+                id="moneyGained" 
+                value={newParticipation.moneyGained || ''} 
+                onChange={(e) => setNewParticipation({...newParticipation, moneyGained: parseInt(e.target.value) || 0})}
+                className="w-full px-3 py-2 border rounded-md"
+                min="0"
+                placeholder="Enter money gained"
+              />
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleAddParticipation} 
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+            disabled={!newParticipation.userId || isSubmitting}
+          >
+            {isSubmitting ? 'Adding...' : 'Add Participation'}
+          </button>
         </div>
         
         {/* Participations Table */}
@@ -333,49 +410,70 @@ export default function AdminMatchForm({ match, users }) {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Points
                   </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Money Spent (₹)
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Money Gained (₹)
+                  </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {participations.map((participation) => (
-                  <tr key={participation.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                      {participation.userName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="number"
-                        value={participation.points === 0 ? '' : participation.points}
-                        placeholder="Enter points"
-                        onChange={(e) => {
-                          // Use direct value assignment instead of Number()
-                          const newPoints = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                          setParticipations(participations.map(p => 
-                            p.id === participation.id ? { ...p, points: newPoints } : p
-                          ));
-                        }}
-                        min="0"
-                        className="w-24 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleUpdateParticipation(participation.id, participation.points)}
-                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-2 transition-colors"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => handleDeleteParticipation(participation.id)}
-                        className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {participations.map((participation) => {
+                  console.log('Rendering participation:', participation);
+                  return (
+                    <tr key={participation.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {participation.userName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="number"
+                          value={participation.points === 0 ? '' : participation.points}
+                          placeholder="Enter points"
+                          onChange={(e) => {
+                            const newPoints = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                            setParticipations(participations.map(p => 
+                              p.id === participation.id ? { ...p, points: newPoints } : p
+                            ));
+                          }}
+                          min="0"
+                          className="w-24 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
+                        {participation.moneySpent || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">
+                        {participation.moneyGained || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            console.log('Save button clicked for participation:', participation.id);
+                            handleUpdateParticipation(participation.id, participation.points);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-2 transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            console.log('Delete button clicked for participation:', participation);
+                            console.log('Participation ID:', participation.id);
+                            handleDeleteParticipation(participation.id);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

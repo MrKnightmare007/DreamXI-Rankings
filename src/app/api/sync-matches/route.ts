@@ -23,8 +23,13 @@ export async function POST(request: NextRequest) {
     for (const match of completedMatches) {
       console.log(`Processing match: ${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`);
       
+      // Filter out admin users from participations when processing
+      const nonAdminParticipations = match.participations.filter(
+        participation => participation.user.role !== 'ADMIN'
+      );
+      
+      // Process only non-admin participations
       // You can add additional logic here if needed
-      // For example, updating statistics, calculating rankings, etc.
     }
 
     // You could also fetch external data here if needed
@@ -48,24 +53,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Also support GET requests for manual triggering
-export async function GET(request: NextRequest) {
-  return POST(request);
-}
 
-// Fetch cricket API data
-export async function GET() {
+
+// Rename GET to something else like syncMatchesHandler
+export async function GET(request: Request) {
   try {
     // Fetch cricket API data
-    const cricketApiResponse = await fetch(
-      `https://api.cricapi.com/v1/series_info?apikey=${process.env.CRICKET_API_KEY}&id=d5a498c8-7596-4b93-8ab0-e0efc3345312`,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-store'
-      }
-    );
+    const cricketApiResponse = await fetch(`https://api.cricapi.com/v1/series_info?apikey=${process.env.CRICKET_API_KEY}&id=d5a498c8-7596-4b93-8ab0-e0efc3345312`, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
+    });
     
     if (!cricketApiResponse.ok) {
       throw new Error(`Cricket API responded with status: ${cricketApiResponse.status}`);

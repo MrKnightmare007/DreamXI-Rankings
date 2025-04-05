@@ -13,36 +13,36 @@ export default function Navigation() {
   };
   
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-md rounded-lg mb-8">
+    <nav className="bg-gray-900 text-white shadow-md mb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              <Link href="/" className="text-xl font-bold text-blue-400">
                 Dream11 Rankings
               </Link>
             </div>
             
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="ml-10 flex space-x-8">
               {session ? (
                 <>
                   <Link 
                     href="/dashboard" 
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard') ? 'border-blue-500 text-white' : 'border-transparent text-gray-300 hover:text-white hover:border-gray-300'}`}
                   >
                     Dashboard
                   </Link>
                   
                   <Link 
                     href="/matches" 
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/matches') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/matches') ? 'border-blue-500 text-white' : 'border-transparent text-gray-300 hover:text-white hover:border-gray-300'}`}
                   >
                     Matches
                   </Link>
                   
                   <Link 
                     href="/leaderboard" 
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/leaderboard') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/leaderboard') ? 'border-blue-500 text-white' : 'border-transparent text-gray-300 hover:text-white hover:border-gray-300'}`}
                   >
                     Leaderboard
                   </Link>
@@ -65,12 +65,17 @@ export default function Navigation() {
               <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
             ) : session ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {session.user.name}
-                </span>
+                <Link 
+                  href="/profile" 
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-md hover:bg-gray-800 transition-colors"
+                >
+                  <span className="text-sm font-medium text-white">
+                    {session.user.name}
+                  </span>
+                </Link>
                 <Link 
                   href="/api/auth/signout"
-                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                  className="text-sm text-red-400 hover:text-red-300"
                 >
                   Sign out
                 </Link>
@@ -94,10 +99,10 @@ export default function Navigation() {
           </div>
           
           {/* Mobile menu button */}
-          <div className="-mr-2 flex items-center sm:hidden">
+          <div className="flex items-center sm:hidden">
             <button 
               type="button" 
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -161,6 +166,12 @@ export default function Navigation() {
               </div>
             </div>
             <div className="mt-3 space-y-1">
+              <Link 
+                href="/profile"
+                className="block px-4 py-2 text-base font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Profile
+              </Link>
               <Link 
                 href="/api/auth/signout"
                 className="block px-4 py-2 text-base font-medium text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"

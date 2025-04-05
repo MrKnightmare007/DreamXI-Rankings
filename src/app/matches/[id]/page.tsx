@@ -69,13 +69,13 @@ export default async function MatchDetailsPage({ params }: { params: { id: strin
         <Link href="/matches" className="text-blue-600 hover:text-blue-800 flex items-center">
           ← Back to Matches
         </Link>
-        <h1 className="text-3xl font-bold text-center flex-grow">Match #{match.id.slice(-3)}</h1>
+        <h1 className="text-3xl font-bold text-center flex-grow">Match #{match.matchNumber || '1'}</h1>
       </div>
       
       {/* Match Header */}
-      <div className={`relative rounded-xl p-8 ${match.completed ? 'bg-green-600' : 'bg-blue-600'} text-white`}>
+      <div className={`relative rounded-xl p-8 ${match.isCompleted ? 'bg-green-600' : match.isLive ? 'bg-blue-600' : 'bg-gray-600'} text-white`}>
         <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-white text-sm font-medium">
-          {match.completed ? 'Completed' : 'Upcoming'}
+          {match.isLive ? 'LIVE' : match.isCompleted ? 'Completed' : 'Upcoming'}
         </div>
         
         <div className="flex justify-between items-center">

@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "emailVerified" TIMESTAMP(3),
+ADD COLUMN     "image" TEXT,
+ADD COLUMN     "totalMoneyGained" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalMoneyLost" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "name" DROP NOT NULL,
+ALTER COLUMN "dreamXIUsername" DROP NOT NULL,
+ALTER COLUMN "email" DROP NOT NULL;
